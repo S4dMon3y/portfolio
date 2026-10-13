@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S4dMon3y — Portfolio</title>
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #050510;
+      --surface: rgba(10, 10, 30, 0.85);
+      --accent: #00b4d8;
+      --accent-dim: rgba(0, 180, 216, 0.15);
+      --accent-glow: rgba(0, 180, 216, 0.4);
+      --text: #d4d4dc;
+      --text-bright: #f0f0f5;
+      --border: rgba(0, 180, 216, 0.2);
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      cursor: default;
+    }
+
+    /* ── Loading Screen ── */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #loading-screen h1 {
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-bright);
+      margin-bottom: 2rem;
+    }
+
+    .progress-track {
+      width: 240px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.3s ease;
+    }
+
+    #loading-text {
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    /* ── Canvas ── */
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    #canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Header ── */
+    #header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      background: linear-gradient(to bottom, rgba(5, 5, 16, 0.9) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    #header > * {
+      pointer-events: auto;
+    }
+
+    #header .brand {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-bright);
+    }
+
+    #header .brand span {
+      color: var(--accent);
+    }
+
+    #header nav {
+      display: flex;
+      gap: 2rem;
+    }
+
+    #header nav a {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.3s;
+      cursor: pointer;
+    }
+
+    #header nav a:hover,
+    #header nav a.active {
+      color: var(--accent);
+    }
+
+    /* ── GitHub Link ── */
+    .github-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .github-link:hover {
+      color: var(--accent);
+    }
+
+    .github-link svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* ── Info Panel ── */
+    #info-panel {
+      position: fixed;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%) translateX(20px);
+      z-index: 10;
+      width: 280px;
+      padding: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      backdrop-filter: blur(12px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s ease;
+    }
+
+    #info-panel.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    #info-panel h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    #info-panel .subtitle {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+    }
+
+    #info-panel .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.8rem;
+    }
+
+    #info-panel .stat-label {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    #info-panel .stat-value {
+      color: var(--text-bright);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #info-panel .controls-hint {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.65rem;
+      color: rgba(255, 255, 255, 0.25);
+      line-height: 1.6;
+    }
+
+    /* ── Bottom Navigation ── */
+    #bottom-nav {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      backdrop-filter: blur(12px);
+    }
+
+    .nav-btn {
+      position: relative;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      outline: none;
+    }
+
+    .nav-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.4s ease;
+    }
+
+    .nav-btn:hover .nav-dot {
+      background: rgba(0, 180, 216, 0.3);
+      border-color: var(--accent);
+    }
+
+    .nav-btn.active .nav-dot {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .nav-tooltip {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-bottom: 0.75rem;
+      white-space: nowrap;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem;
+      border-radius: 3px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+      pointer-events: none;
+    }
+
+    .nav-btn:hover .nav-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .nav-separator {
+      width: 1px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0 0.25rem;
+    }
+
+    /* ── Video Modal ── */
+    #video-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #video-modal.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #video-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      cursor: pointer;
+    }
+
+    .modal-content {
+      position: relative;
+      width: 80%;
+      max-width: 960px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .modal-header h3 {
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-bright);
+    }
+
+    .modal-close {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    .modal-close:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .modal-content video {
+      display: block;
+      width: 100%;
+      background: #000;
+    }
+
+    /* ── About / GitHub Panel ── */
+    #about-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #about-panel.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #about-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      cursor: pointer;
+    }
+
+    .about-content {
+      position: relative;
+      width: 420px;
+      max-width: 90%;
+      padding: 3rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .about-content .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .about-content h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+    }
+
+    .about-content p {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.4);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .about-content .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-family: var(--font);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .about-content .btn:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .about-content .btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* ── Keyboard Hints ── */
+    #key-hints {
+      position: fixed;
+      bottom: 5.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.2);
+      opacity: 1;
+      transition: opacity 3s ease 5s;
+    }
+
+    #key-hints.fade {
+      opacity: 0;
+    }
+
+    kbd {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      font-family: var(--font);
+      font-size: 0.6rem;
+      margin: 0 0.15rem;
+      color: rgba(255, 255, 255, 0.35);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <h1>Loading Portfolio</h1>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div id="loading-text">Preparing scene...</div>
+  </div>
+
+  <!-- 3D Canvas -->
+  <div id="canvas-container"></div>
+
+  <!-- Header -->
+  <header id="header">
+    <div class="brand">S4d<span>Mon3y</span></div>
+    <nav>
+      <a href="#" id="nav-overview" class="active">Overview</a>
+      <a href="#" id="nav-video">Demo Reel</a>
+      <a href="#" id="nav-about">About</a>
+    </nav>
+    <a href="https://github.com/S4dMon3y" target="_blank" rel="noopener" class="github-link">
+      <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      S4dMon3y
+    </a>
+  </header>
+
+  <!-- Info Panel -->
+  <aside id="info-panel">
+    <h2 id="obj-name"></h2>
+    <div class="subtitle">PXE Project</div>
+    <div id="obj-stats">
+      <div class="stat-row">
+        <span class="stat-label">Vertices</span>
+        <span class="stat-value" id="stat-verts">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Triangles</span>
+        <span class="stat-value" id="stat-tris">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">File Size</span>
+        <span class="stat-value" id="stat-size">--</span>
+      </div>
+    </div>
+    <div class="controls-hint">
+      Drag to orbit. Scroll to zoom.<br>
+      Click another model or use the navigation below to switch views.
+    </div>
+  </aside>
+
+  <!-- Bottom Navigation -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-index="-1">
+      <span class="nav-dot"></span>
+      <span class="nav-tooltip">Overview</span>
+    </button>
+    <div class="nav-separator"></div>
+    <button class="nav-btn" data-index="0">
+      <span class="nav-dot"></span>
+      <span class="nav-tooltip">Waterslide</span>
+    </button>
+    <button class="nav-btn" data-index="1">
+      <span class="nav-dot"></span>
+      <span class="nav-tooltip">Mountain (Low)</span>
+    </button>
+    <button class="nav-btn" data-index="2">
+      <span class="nav-dot"></span>
+      <span class="nav-tooltip">Mountain</span>
+    </button>
+    <button class="nav-btn" data-index="3">
+      <span class="nav-dot"></span>
+      <span class="nav-tooltip">Building</span>
+    </button>
+  </nav>
+
+  <!-- Keyboard Hints -->
+  <div id="key-hints">
+    <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Navigate</span>
+    <span><kbd>Esc</kbd> Overview</span>
+    <span>Click a model to inspect</span>
+  </div>
+
+  <!-- Video Modal -->
+  <div id="video-modal">
+    <div id="video-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Demo Reel</h3>
+        <button class="modal-close" id="close-video">Close</button>
+      </div>
+      <video id="demo-video" controls preload="metadata">
+        <source src="video/demo.mp4" type="video/mp4">
+      </video>
+    </div>
+  </div>
+
+  <!-- About / GitHub Panel -->
+  <div id="about-panel">
+    <div id="about-backdrop"></div>
+    <div class="about-content">
+      <img src="https://avatars.githubusercontent.com/u/341994928?v=4" alt="Avatar" class="avatar">
+      <h2>S4dMon3y</h2>
+      <p>3D modeling and design portfolio. Built with Three.js. Models created in Blender.</p>
+      <a href="https://github.com/S4dMon3y" target="_blank" rel="noopener" class="btn">
+        <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View GitHub Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ── Configuration ──
+    const MODELS = [
+      { file: 'models/waterslide.stl', name: 'Waterslide', size: '85.8 KB', color: 0x4db8d4 },
+      { file: 'models/mountain_low.stl', name: 'Mountain (Low Poly)', size: '23.5 KB', color: 0x5a9e6f },
+      { file: 'models/mountain.stl', name: 'Mountain', size: '32.7 KB', color: 0x6b8cc7 },
+      { file: 'models/building.stl', name: 'Building', size: '114.7 KB', color: 0xc4915e },
+    ];
+
+    // Object positions in 3D space — arranged in a semicircle
+    const POSITIONS = [
+      new THREE.Vector3(-18, 0, -2),
+      new THREE.Vector3(-6, 0, -14),
+      new THREE.Vector3(6, 0, -14),
+      new THREE.Vector3(18, 0, -2),
+    ];
+
+    const OVERVIEW_CAM = { pos: new THREE.Vector3(0, 14, 28), target: new THREE.Vector3(0, 0, -6) };
+    const MODEL_SCALE = 5;
+
+    // ── DOM References ──
+    const container = document.getElementById('canvas-container');
+    const loadingScreen = document.getElementById('loading-screen');
+    const progressFill = document.getElementById('progress-fill');
+    const loadingText = document.getElementById('loading-text');
+    const infoPanel = document.getElementById('info-panel');
+    const objName = document.getElementById('obj-name');
+    const statVerts = document.getElementById('stat-verts');
+    const statTris = document.getElementById('stat-tris');
+    const statSize = document.getElementById('stat-size');
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const videoModal = document.getElementById('video-modal');
+    const aboutPanel = document.getElementById('about-panel');
+    const keyHints = document.getElementById('key-hints');
+
+    // ── Scene Setup ──
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050510);
+    scene.fog = new THREE.FogExp2(0x050510, 0.008);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.copy(OVERVIEW_CAM.pos);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.copy(OVERVIEW_CAM.target);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.minDistance = 3;
+    controls.maxDistance = 60;
+    controls.maxPolarAngle = Math.PI * 0.85;
+    controls.update();
+
+    // ── Lighting ──
+    const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    keyLight.position.set(10, 20, 15);
+    scene.add(keyLight);
+
+    const fillLight = new THREE.DirectionalLight(0x8090b0, 0.4);
+    fillLight.position.set(-10, 10, -5);
+    scene.add(fillLight);
+
+    // Per-object accent lights
+    const accentLights = POSITIONS.map((pos, i) => {
+      const light = new THREE.PointLight(MODELS[i].color, 0.8, 25);
+      light.position.set(pos.x, 6, pos.z);
+      scene.add(light);
+      return light;
+    });
+
+    // ── Starfield ──
+    function createStarfield() {
+      const count = 3000;
+      const positions = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        const r = 80 + Math.random() * 120;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        positions[i * 3 + 2] = r * Math.cos(phi);
+        sizes[i] = 0.3 + Math.random() * 0.7;
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+      const mat = new THREE.PointsMaterial({
+        color: 0xaabbdd,
+        size: 0.15,
+        transparent: true,
+        opacity: 0.5,
+        sizeAttenuation: true,
+      });
+
+      return new THREE.Points(geo, mat);
+    }
+    scene.add(createStarfield());
+
+    // ── Grid Floor ──
+    const gridHelper = new THREE.GridHelper(120, 60, 0x0a0a2a, 0x0a0a2a);
+    gridHelper.position.y = -3.5;
+    gridHelper.material.opacity = 0.4;
+    gridHelper.material.transparent = true;
+    scene.add(gridHelper);
+
+    // ── Ground Plane (subtle reflective) ──
+    const groundGeo = new THREE.PlaneGeometry(120, 120);
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x050510,
+      metalness: 0.8,
+      roughness: 0.6,
+      transparent: true,
+      opacity: 0.5,
+    });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -3.51;
+    scene.add(ground);
+
+    // ── Pedestals ──
+    function createPedestal(position, color) {
+      const group = new THREE.Group();
+
+      // Base cylinder
+      const baseGeo = new THREE.CylinderGeometry(3.2, 3.6, 0.4, 48);
+      const baseMat = new THREE.MeshPhysicalMaterial({
+        color: 0x12122a,
+        metalness: 0.9,
+        roughness: 0.15,
+        clearcoat: 0.5,
+      });
+      const base = new THREE.Mesh(baseGeo, baseMat);
+      base.position.y = -3.3;
+      group.add(base);
+
+      // Accent ring
+      const ringGeo = new THREE.TorusGeometry(3.3, 0.04, 8, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: color });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = -3.08;
+      group.add(ring);
+
+      // Glow disc
+      const glowGeo = new THREE.CircleGeometry(3, 48);
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.06,
+        side: THREE.DoubleSide,
+      });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.rotation.x = -Math.PI / 2;
+      glow.position.y = -3.07;
+      group.add(glow);
+
+      group.position.set(position.x, 0, position.z);
+      scene.add(group);
+      return group;
+    }
+
+    POSITIONS.forEach((pos, i) => createPedestal(pos, MODELS[i].color));
+
+    // ── Load STL Models ──
+    const loader = new STLLoader();
+    const objectMeshes = [];
+    const objectData = [];
+    let loadedCount = 0;
+
+    function loadModel(index) {
+      return new Promise((resolve) => {
+        const config = MODELS[index];
+        const pos = POSITIONS[index];
+
+        loader.load(config.file, (geometry) => {
+          geometry.computeBoundingBox();
+          const bbox = geometry.boundingBox;
+          const center = new THREE.Vector3();
+          bbox.getCenter(center);
+          geometry.translate(-center.x, -center.y, -center.z);
+
+          // Recompute after centering
+          geometry.computeBoundingBox();
+          const size = new THREE.Vector3();
+          geometry.boundingBox.getSize(size);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = MODEL_SCALE / maxDim;
+
+          const material = new THREE.MeshPhysicalMaterial({
+            color: config.color,
+            metalness: 0.35,
+            roughness: 0.35,
+            clearcoat: 0.4,
+            clearcoatRoughness: 0.25,
+            envMapIntensity: 1.0,
+          });
+
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.scale.set(scale, scale, scale);
+          mesh.position.set(pos.x, 0, pos.z);
+          mesh.castShadow = true;
+          mesh.userData = { index, name: config.name };
+
+          scene.add(mesh);
+          objectMeshes[index] = mesh;
+
+          const vertCount = geometry.attributes.position.count;
+          const triCount = vertCount / 3;
+          objectData[index] = {
+            name: config.name,
+            vertices: vertCount.toLocaleString(),
+            triangles: triCount.toLocaleString(),
+            fileSize: config.size,
+          };
+
+          loadedCount++;
+          const progress = (loadedCount / MODELS.length) * 100;
+          progressFill.style.width = progress + '%';
+          loadingText.textContent = `Loaded ${config.name}`;
+
+          resolve();
+        });
+      });
+    }
+
+    async function loadAllModels() {
+      for (let i = 0; i < MODELS.length; i++) {
+        await loadModel(i);
+      }
+
+      // Dismiss loading screen
+      setTimeout(() => {
+        loadingScreen.classList.add('hidden');
+      }, 400);
+
+      // Fade key hints after a while
+      setTimeout(() => {
+        keyHints.classList.add('fade');
+      }, 1000);
+    }
+
+    loadAllModels();
+
+    // ── Camera Animation System ──
+    class CameraAnimator {
+      constructor() {
+        this.active = false;
+        this.startPos = new THREE.Vector3();
+        this.endPos = new THREE.Vector3();
+        this.startTarget = new THREE.Vector3();
+        this.endTarget = new THREE.Vector3();
+        this.progress = 0;
+        this.duration = 1.8;
+      }
+
+      flyTo(position, target) {
+        this.startPos.copy(camera.position);
+        this.endPos.copy(position);
+        this.startTarget.copy(controls.target);
+        this.endTarget.copy(target);
+        this.progress = 0;
+        this.active = true;
+        controls.enabled = false;
+      }
+
+      update(dt) {
+        if (!this.active) return;
+
+        this.progress += dt / this.duration;
+        if (this.progress >= 1) {
+          this.progress = 1;
+          this.active = false;
+          controls.enabled = true;
+        }
+
+        const t = this.easeInOutQuart(this.progress);
+        camera.position.lerpVectors(this.startPos, this.endPos, t);
+        controls.target.lerpVectors(this.startTarget, this.endTarget, t);
+        controls.update();
+      }
+
+      easeInOutQuart(t) {
+        return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+      }
+    }
+
+    const animator = new CameraAnimator();
+    let currentIndex = -1; // -1 = overview
+
+    function focusObject(index) {
+      if (animator.active) return;
+
+      currentIndex = index;
+
+      if (index === -1) {
+        // Overview
+        animator.flyTo(OVERVIEW_CAM.pos, OVERVIEW_CAM.target);
+        infoPanel.classList.remove('visible');
+      } else {
+        const pos = POSITIONS[index];
+        const camPos = new THREE.Vector3(pos.x + 8, 5, pos.z + 10);
+        const target = new THREE.Vector3(pos.x, 0, pos.z);
+        animator.flyTo(camPos, target);
+
+        // Update info panel
+        const data = objectData[index];
+        if (data) {
+          objName.textContent = data.name;
+          statVerts.textContent = data.vertices;
+          statTris.textContent = data.triangles;
+          statSize.textContent = data.fileSize;
+          infoPanel.classList.add('visible');
+        }
+      }
+
+      // Update nav dots
+      navBtns.forEach(btn => {
+        const btnIndex = parseInt(btn.dataset.index);
+        btn.classList.toggle('active', btnIndex === index);
+      });
+
+      // Update header nav
+      document.getElementById('nav-overview').classList.toggle('active', index === -1);
+    }
+
+    // ── Raycasting (Click Detection) ──
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      // Ignore if a modal is open
+      if (videoModal.classList.contains('visible') || aboutPanel.classList.contains('visible')) return;
+
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      if (videoModal.classList.contains('visible') || aboutPanel.classList.contains('visible')) return;
+
+      const upMouse = new THREE.Vector2(
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
+      );
+
+      // Only register click if mouse didn't move much (not a drag)
+      if (Math.abs(upMouse.x - mouse.x) > 0.02 || Math.abs(upMouse.y - mouse.y) > 0.02) return;
+
+      raycaster.setFromCamera(upMouse, camera);
+      const intersects = raycaster.intersectObjects(objectMeshes.filter(Boolean));
+
+      if (intersects.length > 0) {
+        const idx = intersects[0].object.userData.index;
+        focusObject(idx);
+      }
+    });
+
+    // ── Nav Button Clicks ──
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.index);
+        focusObject(index);
+      });
+    });
+
+    // ── Header Nav ──
+    document.getElementById('nav-overview').addEventListener('click', (e) => {
+      e.preventDefault();
+      focusObject(-1);
+    });
+
+    document.getElementById('nav-video').addEventListener('click', (e) => {
+      e.preventDefault();
+      videoModal.classList.add('visible');
+    });
+
+    document.getElementById('nav-about').addEventListener('click', (e) => {
+      e.preventDefault();
+      aboutPanel.classList.add('visible');
+    });
+
+    // ── Video Modal ──
+    document.getElementById('close-video').addEventListener('click', () => {
+      videoModal.classList.remove('visible');
+      document.getElementById('demo-video').pause();
+    });
+
+    document.getElementById('video-backdrop').addEventListener('click', () => {
+      videoModal.classList.remove('visible');
+      document.getElementById('demo-video').pause();
+    });
+
+    // ── About Panel ──
+    document.getElementById('about-backdrop').addEventListener('click', () => {
+      aboutPanel.classList.remove('visible');
+    });
+
+    // ── Keyboard Navigation ──
+    document.addEventListener('keydown', (e) => {
+      // Close modals on Escape
+      if (e.key === 'Escape') {
+        if (videoModal.classList.contains('visible')) {
+          videoModal.classList.remove('visible');
+          document.getElementById('demo-video').pause();
+          return;
+        }
+        if (aboutPanel.classList.contains('visible')) {
+          aboutPanel.classList.remove('visible');
+          return;
+        }
+        focusObject(-1);
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = currentIndex + 1;
+        if (next < MODELS.length) focusObject(next);
+      }
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = currentIndex - 1;
+        if (prev >= -1) focusObject(prev);
+      }
+    });
+
+    // ── Resize ──
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ── Animation Loop ──
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // Slowly rotate models
+      objectMeshes.forEach((mesh, i) => {
+        if (!mesh) return;
+        mesh.rotation.y += dt * 0.25;
+        // Gentle float
+        mesh.position.y = POSITIONS[i].y + Math.sin(elapsed * 0.8 + i * 1.5) * 0.15;
+      });
+
+      // Pulse accent ring lights subtly
+      accentLights.forEach((light, i) => {
+        light.intensity = 0.6 + Math.sin(elapsed * 1.2 + i * 0.8) * 0.2;
+      });
+
+      // Camera animation
+      animator.update(dt);
+
+      // Controls
+      if (!animator.active) {
+        controls.update();
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
